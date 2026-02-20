@@ -131,8 +131,84 @@ function generateDocument(type) {
 
     const client = clientData[clientIndex];
     const totalAmount = document.getElementById('bill-total').innerText;
-    const docNo = `ORD-${Date.now().toString().slice(-6)}`;
 
+    // --- LOGIK NOMBOR RUJUKAN BERMULA 1001 ---
+    // Kira berapa banyak dokumen jenis tersebut yang sudah ada dalam history
+    const count = historyData.filter(h => h.type === type).length;
+    const nextNo = 1001 + count;
+    
+    let prefix = "INV";
+    if(type === 'QUOTATION') prefix = "QUO";
+    if(type === 'RECEIPT') prefix = "REC";
+    
+    const docNo = `${prefix}${nextNo}`;
+
+    // 1. Update UI Dokumen
+    setBillType(type);
+    document.getElementById('bill-ref-no').innerText = docNo;
+    document.getElementById('bill-client-display').innerHTML = `<strong>${client.name}</strong><br>Email: ${client.email}<br>Tel: ${client.phone}`;
+    document.getElementById('bill-date').innerText = new Date().toLocaleDateString('ms-MY');
+
+    // 2. Simpan ke History
+    historyData.push({
+        id: Date.now(),
+        date: new Date().toLocaleDateString('ms-MY'),
+        time: new Date().toLocaleTimeString('ms-MY'),
+        type: type,
+        docNo: docNo,
+        clientName: client.name,
+        amount: totalAmount,
+        items: [...currentBillItems]
+    });
+    localStorage.setItem('history', JSON.stringify(historyData));
+
+    // 3. Proses Cetak
+    setTimeout(() => {
+        window.print();
+        if(type === 'RECEIPT') {
+            currentBillItems = [];
+            renderBillingTable();
+        }
+        renderAll();
+    }, 300);
+}
+
+// Tambah fungsi untuk Dashboard
+function updateDashboard() {
+    let totalSales = 0;
+    let recCount = 0;
+    let quoCount = 0;
+
+    historyData.forEach(h => {
+        if(h.type === 'RECEIPT' || h.type === 'INVOICE') {
+            totalSales += parseFloat(h.amount);
+        }
+        if(h.type === 'RECEIPT') recCount++;
+        if(h.type === 'QUOTATION') quoCount++;
+    });
+
+    document.getElementById('dash-total-sales').innerText = totalSales.toFixed(2);
+    document.getElementById('dash-total-rec').innerText = recCount;
+    document.getElementById('dash-total-quo').innerText = quoCount;
+}
+
+// Pastikan renderAll memanggil updateDashboard
+function renderAll() {
+    // ... kod render CRM, Inventory, Client yang sedia ada ...
+    
+    // Kemaskini Dropdowns
+    const clientSelect = document.getElementById('bill-client-select');
+    if(clientSelect) {
+        const currentVal = clientSelect.value;
+        clientSelect.innerHTML = '<option value="">-- Pilih Pelanggan --</option>' + 
+            clientData.map((d, i) => `<option value="${i}">${d.name}</option>`).join('');
+        clientSelect.value = currentVal;
+    }
+
+    // Panggil Dashboard & History
+    updateDashboard();
+    renderHistory();
+}
     // 1. Update UI Dokumen
     setBillType(type);
     document.getElementById('bill-client-display').innerHTML = `<strong>${client.name}</strong><br>Email: ${client.email}<br>Tel: ${client.phone}`;
