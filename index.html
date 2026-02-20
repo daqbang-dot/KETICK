@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Pengurusan Bisnes</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav>
+        <h2>MyBiz Admin</h2>
+        <ul>
+            <li><a href="#" onclick="showSection('crm')">CRM</a></li>
+            <li><a href="#" onclick="showSection('inventory')">Inventory</a></li>
+            <li><a href="#" onclick="showSection('clients')">Clients</a></li>
+            <li><a href="#" onclick="showSection('billing')">Billing</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <section id="crm" class="active">
+            <h1>Customer Relationship Management (CRM)</h1>
+            <form id="crm-form">
+                <input type="text" id="lead-name" placeholder="Nama Prospek" required>
+                <select id="lead-status">
+                    <option value="New">Baru</option>
+                    <option value="Follow-up">Follow-up</option>
+                    <option value="Closed">Selesai</option>
+                </select>
+                <button type="submit">Tambah Lead</button>
+            </form>
+            <table id="crm-table">
+                <thead>
+                    <tr><th>Nama</th><th>Status</th><th>Tindakan</th></tr>
+                </thead>
+                <tbody id="crm-list"></tbody>
+            </table>
+        </section>
+
+        <section id="inventory">
+            <h1>Inventory Database</h1>
+            <form id="inv-form">
+                <input type="text" id="item-name" placeholder="Nama Barang" required>
+                <input type="number" id="item-qty" placeholder="Kuantiti" required>
+                <input type="number" id="item-price" placeholder="Harga (RM)" required>
+                <button type="submit">Tambah Stok</button>
+            </form>
+            <table>
+                <thead>
+                    <tr><th>Barang</th><th>Kuantiti</th><th>Harga</th><th>Tindakan</th></tr>
+                </thead>
+                <tbody id="inv-list"></tbody>
+            </table>
+        </section>
+
+        <section id="clients">
+            <h1>Client Database</h1>
+            <form id="client-form">
+                <input type="text" id="client-name" placeholder="Nama Pelanggan" required>
+                <input type="email" id="client-email" placeholder="Email">
+                <input type="text" id="client-phone" placeholder="No. Telefon">
+                <button type="submit">Simpan Pelanggan</button>
+            </form>
+            <table>
+                <thead>
+                    <tr><th>Nama</th><th>Email</th><th>Telefon</th></tr>
+                </thead>
+                <tbody id="client-list"></tbody>
+            </table>
+        </section>
+
+        <section id="billing">
+            <h1>Billing (Invoice/Quotation)</h1>
+            <div id="billing-print-area">
+                <h2 id="bill-type">INVOICE</h2>
+                <div class="bill-info">
+                    <p>Kepada: <span id="bill-client-display">-</span></p>
+                    <p>Tarikh: <span id="bill-date">-</span></p>
+                </div>
+                <table id="bill-items-table">
+                    <thead>
+                        <tr><th>Item</th><th>Harga</th></tr>
+                    </thead>
+                    <tbody id="bill-items-list"></tbody>
+                </table>
+                <h3>Total: RM <span id="bill-total">0.00</span></h3>
+            </div>
+            <hr>
+            <h3>Generate Baru</h3>
+            <select id="bill-client-select"></select>
+            <select id="bill-item-select"></select>
+            <button onclick="addToBill()">Tambah Item</button>
+            <button onclick="printBill('INVOICE')">Generate Invoice</button>
+            <button onclick="printBill('QUOTATION')">Generate Quotation</button>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
