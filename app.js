@@ -1,6 +1,9 @@
 // ==========================================
 // 1. DATA STORAGE & INITIALIZATION
 // ==========================================
+let companyProfile = JSON.parse(localStorage.getItem('companyProfile')) || {
+    name: '', reg: '', address: '', phone: '', logo: '', stamp: ''
+};
 let crmData = JSON.parse(localStorage.getItem('crm')) || [];
 let inventoryData = JSON.parse(localStorage.getItem('inventory')) || [];
 let clientData = JSON.parse(localStorage.getItem('clients')) || [];
@@ -9,7 +12,25 @@ let currentBillItems = [];
 let currentBillType = "INVOICE";
 
 // ==========================================
-// 2. NAVIGATION & UI CONTROL
+// 2. FUNGSI SIMPAN PROFIL
+// ==========================================
+function saveCompanyProfile() {
+    companyProfile = {
+        name: document.getElementById('conf-name').value,
+        reg: document.getElementById('conf-reg').value,
+        address: document.getElementById('conf-address').value,
+        phone: document.getElementById('conf-phone').value,
+        logo: document.getElementById('conf-logo').value,
+        stamp: document.getElementById('conf-stamp').value
+    };
+    localStorage.setItem('companyProfile', JSON.stringify(companyProfile));
+    alert("Profil berjaya disimpan!");
+    renderAll();
+}
+
+
+// ==========================================
+// 3. NAVIGATION & UI CONTROL
 // ==========================================
 function showSection(id) {
     document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
@@ -18,7 +39,7 @@ function showSection(id) {
 }
 
 // ==========================================
-// 3. CORE LOGIC (CRM & CLIENTS)
+// 4. CORE LOGIC (CRM & CLIENTS)
 // ==========================================
 
 // CRM Logic
@@ -47,7 +68,7 @@ document.getElementById('client-form').addEventListener('submit', (e) => {
 });
 
 // ==========================================
-// 4. INVENTORY LOGIC (DENGAN DESCRIPTION)
+// 5. INVENTORY LOGIC (DENGAN DESCRIPTION)
 // ==========================================
 document.getElementById('inv-form').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -63,7 +84,7 @@ document.getElementById('inv-form').addEventListener('submit', (e) => {
 });
 
 // ==========================================
-// 5. BILLING & DOCUMENT LOGIC
+// 6. BILLING & DOCUMENT LOGIC
 // ==========================================
 
 function setBillType(type) {
@@ -117,14 +138,31 @@ function removeFromBill(index) {
 function generateDocument(type) {
     const clientIndex = document.getElementById('bill-client-select').value;
     if (clientIndex === "" || currentBillItems.length === 0) {
-        alert("Sila pilih pelanggan dan tambah item!");
-        return;
+        alert("Sila pilih pelanggan dan tambah item!"); return;
     }
 
-    const client = clientData[clientIndex];
-    const totalAmount = document.getElementById('bill-total').innerText;
+    // 1. Set Maklumat Syarikat ke Print Area
+    document.getElementById('print-comp-name').innerText = companyProfile.name || "Sila Set Nama Syarikat";
+    document.getElementById('print-comp-reg').innerText = "Reg No: " + companyProfile.reg;
+    document.getElementById('print-comp-addr').innerText = companyProfile.address;
+    document.getElementById('print-comp-phone').innerText = "Tel: " + companyProfile.phone;
+    
+    if(companyProfile.logo) {
+        document.getElementById('print-logo').src = companyProfile.logo;
+        document.getElementById('print-logo').style.display = 'block';
+    }
+    if(companyProfile.stamp) {
+        document.getElementById('print-stamp').src = companyProfile.stamp;
+        document.getElementById('print-stamp').style.display = 'block';
+    }
 
-    // Logik Nombor Rujukan
+    // 2. Set Maklumat Bank & Remark
+    document.getElementById('display-bank').innerText = document.getElementById('bill-bank-name').value || "-";
+    document.getElementById('display-acc').innerText = document.getElementById('bill-bank-acc').value || "-";
+    document.getElementById('display-holder').innerText = document.getElementById('bill-bank-holder').value || "-";
+    document.getElementById('display-remark').innerText = document.getElementById('bill-remark').value || "-";
+
+    // 3. Logik Nombor Rujukan
     const count = historyData.filter(h => h.type === type).length;
     const nextNo = 1001 + count;
     let prefix = type === 'QUOTATION' ? "QUO" : (type === 'RECEIPT' ? "REC" : "INV");
@@ -158,9 +196,26 @@ function generateDocument(type) {
         renderAll();
     }, 300);
 }
+const client = clientData[clientIndex];
+    const totalAmount = document.getElementById('bill-total').innerText;
+    const count = historyData.filter(h => h.type === type).length;
+    const nextNo = 1001 + count;
+    let prefix = type === 'QUOTATION' ? "QUO" : (type === 'RECEIPT' ? "REC" : "INV");
+    const docNo = `${prefix}${nextNo}`;
+
+    document.getElementById('bill-ref-no').innerText = docNo;
+    document.getElementById('bill-date').innerText = new Date().toLocaleDateString('ms-MY');
+    document.getElementById('bill-client-display').innerHTML = `<strong>${client.name}</strong><br>${client.email}<br>${client.phone}`;
+
+    setTimeout(() => {
+        window.print();
+        renderAll();
+    }, 300);
+}
+
 
 // ==========================================
-// 6. DASHBOARD & HISTORY
+// 7. DASHBOARD & HISTORY
 // ==========================================
 function updateDashboard() {
     let totalSales = 0, recCount = 0, quoCount = 0;
@@ -195,7 +250,7 @@ function renderHistory() {
 }
 
 // ==========================================
-// 7. RENDER ALL & SAVE
+// 8. RENDER ALL & SAVE
 // ==========================================
 function renderAll() {
     // Render CRM
@@ -257,5 +312,16 @@ function saveAndRender() {
     renderAll();
 }
 
+function loadProfileInputs() {
+    document.getElementById('conf-name').value = companyProfile.name;
+    document.getElementById('conf-reg').value = companyProfile.reg;
+    document.getElementById('conf-address').value = companyProfile.address;
+    document.getElementById('conf-phone').value = companyProfile.phone;
+    document.getElementById('conf-logo').value = companyProfile.logo;
+    document.getElementById('conf-stamp').value = companyProfile.stamp;
+}
+
 // Mula Sistem
 renderAll();
+
+loadProfileInputs();
