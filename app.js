@@ -133,7 +133,6 @@ function generateDocument(type) {
     const totalAmount = document.getElementById('bill-total').innerText;
 
     // --- LOGIK NOMBOR RUJUKAN BERMULA 1001 ---
-    // Kira berapa banyak dokumen jenis tersebut yang sudah ada dalam history
     const count = historyData.filter(h => h.type === type).length;
     const nextNo = 1001 + count;
     
@@ -173,7 +172,9 @@ function generateDocument(type) {
     }, 300);
 }
 
-// Tambah fungsi untuk Dashboard
+// ==========================================
+// 5. DASHBOARD & HISTORY MANAGEMENT
+// ==========================================
 function updateDashboard() {
     let totalSales = 0;
     let recCount = 0;
@@ -187,60 +188,13 @@ function updateDashboard() {
         if(h.type === 'QUOTATION') quoCount++;
     });
 
-    document.getElementById('dash-total-sales').innerText = totalSales.toFixed(2);
-    document.getElementById('dash-total-rec').innerText = recCount;
-    document.getElementById('dash-total-quo').innerText = quoCount;
-}
-
-// Pastikan renderAll memanggil updateDashboard
-function renderAll() {
-    // ... kod render CRM, Inventory, Client yang sedia ada ...
-    
-    // Kemaskini Dropdowns
-    const clientSelect = document.getElementById('bill-client-select');
-    if(clientSelect) {
-        const currentVal = clientSelect.value;
-        clientSelect.innerHTML = '<option value="">-- Pilih Pelanggan --</option>' + 
-            clientData.map((d, i) => `<option value="${i}">${d.name}</option>`).join('');
-        clientSelect.value = currentVal;
+    if(document.getElementById('dash-total-sales')) {
+        document.getElementById('dash-total-sales').innerText = totalSales.toFixed(2);
+        document.getElementById('dash-total-rec').innerText = recCount;
+        document.getElementById('dash-total-quo').innerText = quoCount;
     }
-
-    // Panggil Dashboard & History
-    updateDashboard();
-    renderHistory();
-}
-    // 1. Update UI Dokumen
-    setBillType(type);
-    document.getElementById('bill-client-display').innerHTML = `<strong>${client.name}</strong><br>Email: ${client.email}<br>Tel: ${client.phone}`;
-    document.getElementById('bill-date').innerText = new Date().toLocaleDateString('ms-MY');
-
-    // 2. Simpan ke History
-    historyData.push({
-        id: Date.now(),
-        date: new Date().toLocaleDateString('ms-MY'),
-        time: new Date().toLocaleTimeString('ms-MY'),
-        type: type,
-        docNo: docNo,
-        clientName: client.name,
-        amount: totalAmount,
-        items: [...currentBillItems]
-    });
-    localStorage.setItem('history', JSON.stringify(historyData));
-
-    // 3. Proses Cetak
-    setTimeout(() => {
-        window.print();
-        if(type === 'RECEIPT') {
-            currentBillItems = [];
-            renderBillingTable();
-        }
-        renderAll();
-    }, 300);
 }
 
-// ==========================================
-// 5. HISTORY MANAGEMENT
-// ==========================================
 function renderHistory() {
     const list = document.getElementById('history-list');
     if(!list) return;
@@ -283,28 +237,39 @@ function viewHistoryItem(id) {
         showSection('billing');
         setBillType(record.type);
         renderBillingTable();
-        alert("Rekod dimuatkan. Anda boleh cetak semula.");
+        alert(`Rekod ${record.docNo} dimuatkan. Anda boleh cetak semula.`);
     }
 }
 
 // ==========================================
-// 6. RENDER & SAVE DATA
+// 6. RENDER & SAVE DATA (SISTEM PUSAT)
 // ==========================================
 function renderAll() {
-    // Render Tables
-    document.getElementById('crm-list').innerHTML = crmData.map(d => `<tr><td>${d.name}</td><td>${d.status}</td><td><button onclick="deleteItem('crm', ${d.id})">Padam</button></td></tr>`).join('');
-    document.getElementById('inv-list').innerHTML = inventoryData.map(d => `<tr><td>${d.item}</td><td>${d.qty}</td><td>RM ${parseFloat(d.price).toFixed(2)}</td><td><button onclick="deleteItem('inventory', ${d.id})">Padam</button></td></tr>`).join('');
-    document.getElementById('client-list').innerHTML = clientData.map(d => `<tr><td>${d.name}</td><td>${d.email}</td><td>${d.phone}</td><td><button onclick="deleteItem('clients', ${d.id})">Padam</button></td></tr>`).join('');
+    // 1. Render Tables
+    const crmList = document.getElementById('crm-list');
+    if(crmList) crmList.innerHTML = crmData.map(d => `<tr><td>${d.name}</td><td>${d.status}</td><td><button onclick="deleteItem('crm', ${d.id})">Padam</button></td></tr>`).join('');
+    
+    const invList = document.getElementById('inv-list');
+    if(invList) invList.innerHTML = inventoryData.map(d => `<tr><td>${d.item}</td><td>${d.qty}</td><td>RM ${parseFloat(d.price).toFixed(2)}</td><td><button onclick="deleteItem('inventory', ${d.id})">Padam</button></td></tr>`).join('');
+    
+    const clientList = document.getElementById('client-list');
+    if(clientList) clientList.innerHTML = clientData.map(d => `<tr><td>${d.name}</td><td>${d.email}</td><td>${d.phone}</td><td><button onclick="deleteItem('clients', ${d.id})">Padam</button></td></tr>`).join('');
 
-    // Update Dropdowns
+    // 2. Update Dropdowns
     const clientSelect = document.getElementById('bill-client-select');
-    const currentClientVal = clientSelect.value;
-    clientSelect.innerHTML = '<option value="">-- Pilih Pelanggan --</option>' + clientData.map((d, i) => `<option value="${i}">${d.name}</option>`).join('');
-    clientSelect.value = currentClientVal;
+    if(clientSelect) {
+        const currentClientVal = clientSelect.value;
+        clientSelect.innerHTML = '<option value="">-- Pilih Pelanggan --</option>' + clientData.map((d, i) => `<option value="${i}">${d.name}</option>`).join('');
+        clientSelect.value = currentClientVal;
+    }
 
     const itemSelect = document.getElementById('bill-item-select');
-    itemSelect.innerHTML = '<option value="">-- Pilih Item --</option>' + inventoryData.map((d, i) => `<option value="${i}">${d.item} (RM ${parseFloat(d.price).toFixed(2)})</option>`).join('');
+    if(itemSelect) {
+        itemSelect.innerHTML = '<option value="">-- Pilih Item --</option>' + inventoryData.map((d, i) => `<option value="${i}">${d.item} (RM ${parseFloat(d.price).toFixed(2)})</option>`).join('');
+    }
 
+    // 3. Update Dashboard & History
+    updateDashboard();
     renderHistory();
 }
 
@@ -322,5 +287,5 @@ function saveAndRender() {
     renderAll();
 }
 
-// Jalankan sistem
+// Initial Run
 renderAll();
