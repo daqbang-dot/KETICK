@@ -60,20 +60,26 @@
         </section>
 
         <section id="inventory">
-            <h1>Inventory Database</h1>
-            <form id="inv-form">
-                <input type="text" id="item-name" placeholder="Nama Barang" required>
-                <input type="number" id="item-qty" placeholder="Kuantiti" required>
-                <input type="number" id="item-price" placeholder="Harga (RM)" step="0.01" required>
-                <button type="submit">Tambah Stok</button>
-            </form>
-            <table>
-                <thead>
-                    <tr><th>Barang</th><th>Kuantiti</th><th>Harga</th><th>Tindakan</th></tr>
-                </thead>
-                <tbody id="inv-list"></tbody>
-            </table>
-        </section>
+    <h1>Inventory Database</h1>
+    <form id="inv-form">
+        <input type="text" id="item-name" placeholder="Nama Barang" required>
+        <input type="text" id="item-desc" placeholder="Penerangan/Description (Opsional)">
+        <input type="number" id="item-qty" placeholder="Kuantiti" required>
+        <input type="number" id="item-price" placeholder="Harga (RM)" step="0.01" required>
+        <button type="submit">Tambah Stok</button>
+    </form>
+    <table>
+        <thead>
+            <tr>
+                <th>Barang</th>
+                <th>Description</th> <th>Kuantiti</th>
+                <th>Harga</th>
+                <th>Tindakan</th>
+            </tr>
+        </thead>
+        <tbody id="inv-list"></tbody>
+    </table>
+</section>
 
         <section id="clients">
             <h1>Client Database</h1>
