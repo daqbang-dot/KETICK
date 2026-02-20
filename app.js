@@ -103,11 +103,40 @@ function viewHistoryItem(id) {
 
 // 4. KEMASKINI renderAll() supaya termasuk renderHistory()
 function renderAll() {
-    // ... kod render CRM, Inventory, Client sedia ada ...
+    // Render CRM
+    const crmList = document.getElementById('crm-list');
+    if(crmList) {
+        crmList.innerHTML = crmData.map(d => `<tr><td>${d.name}</td><td>${d.status}</td><td><button onclick="deleteItem('crm', ${d.id})">Padam</button></td></tr>`).join('');
+    }
     
+    // Render Inventory
+    const invList = document.getElementById('inv-list');
+    if(invList) {
+        invList.innerHTML = inventoryData.map(d => `<tr><td>${d.item}</td><td>${d.qty}</td><td>RM ${d.price}</td><td><button onclick="deleteItem('inventory', ${d.id})">Padam</button></td></tr>`).join('');
+    }
+    
+    // Render Clients
+    const clientList = document.getElementById('client-list');
+    if(clientList) {
+        clientList.innerHTML = clientData.map(d => `<tr><td>${d.name}</td><td>${d.email}</td><td>${d.phone}</td></tr>`).join('');
+    }
+
+    // UPDATE DROPDOWNS (Penting: Kita kemaskini hanya jika perlu)
+    const clientSelect = document.getElementById('bill-client-select');
+    if(clientSelect) {
+        clientSelect.innerHTML = '<option value="">-- Pilih Pelanggan --</option>' + 
+            clientData.map((d, i) => `<option value="${i}">${d.name}</option>`).join('');
+    }
+
+    const itemSelect = document.getElementById('bill-item-select');
+    if(itemSelect) {
+        itemSelect.innerHTML = '<option value="">-- Pilih Item --</option>' + 
+            inventoryData.map((d, i) => `<option value="${i}">${d.item} (RM ${d.price})</option>`).join('');
+    }
     // Tambah baris ini:
     renderHistory();
-    
+    if(typeof renderHistory === "function") renderHistory();
+}
     // Kod sedia ada untuk dropdown...
     document.getElementById('bill-client-select').innerHTML = clientData.map((d, i) => `<option value="${i}">${d.name}</option>`).join('');
     document.getElementById('bill-item-select').innerHTML = inventoryData.map((d, i) => `<option value="${i}">${d.item} (RM ${d.price})</option>`).join('');
