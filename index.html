@@ -3,22 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Pengurusan Bisnes</title>
+    <title>Sistem Pengurusan Bisnes - MyBiz</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <nav>
+    <nav class="no-print">
         <h2>MyBiz Admin</h2>
         <ul>
             <li><a href="#" onclick="showSection('crm')">CRM</a></li>
             <li><a href="#" onclick="showSection('inventory')">Inventory</a></li>
             <li><a href="#" onclick="showSection('clients')">Clients</a></li>
             <li><a href="#" onclick="showSection('billing')">Billing</a></li>
+            <li><a href="#" onclick="showSection('history')">History</a></li>
         </ul>
     </nav>
 
     <div class="container">
+        
         <section id="crm" class="active">
             <h1>Customer Relationship Management (CRM)</h1>
             <form id="crm-form">
@@ -30,7 +32,7 @@
                 </select>
                 <button type="submit">Tambah Lead</button>
             </form>
-            <table id="crm-table">
+            <table>
                 <thead>
                     <tr><th>Nama</th><th>Status</th><th>Tindakan</th></tr>
                 </thead>
@@ -43,7 +45,7 @@
             <form id="inv-form">
                 <input type="text" id="item-name" placeholder="Nama Barang" required>
                 <input type="number" id="item-qty" placeholder="Kuantiti" required>
-                <input type="number" id="item-price" placeholder="Harga (RM)" required>
+                <input type="number" id="item-price" placeholder="Harga (RM)" step="0.01" required>
                 <button type="submit">Tambah Stok</button>
             </form>
             <table>
@@ -64,103 +66,101 @@
             </form>
             <table>
                 <thead>
-                    <tr><th>Nama</th><th>Email</th><th>Telefon</th></tr>
+                    <tr><th>Nama</th><th>Email</th><th>Telefon</th><th>Tindakan</th></tr>
                 </thead>
                 <tbody id="client-list"></tbody>
             </table>
         </section>
 
         <section id="billing">
-    <h1>Billing & Documentation</h1>
-    
-    <div class="billing-controls no-print">
-        <div style="margin-bottom: 15px;">
-            <label>1. Pilih Pelanggan:</label>
-            <select id="bill-client-select" style="width: 100%; margin-top:5px;"></select>
-        </div>
-        
-        <div style="margin-bottom: 15px;">
-            <label>2. Pilih Produk/Servis:</label>
-            <div style="display:flex; gap:10px; margin-top:5px;">
-                <select id="bill-item-select" style="flex-grow:1;"></select>
-                <button onclick="addToBill()" style="background:#3498db;">+ Tambah</button>
+            <h1 class="no-print">Billing & Documentation</h1>
+            
+            <div class="billing-controls no-print">
+                <div style="margin-bottom: 15px;">
+                    <label>1. Pilih Pelanggan:</label>
+                    <select id="bill-client-select" style="width: 100%; margin-top:5px;"></select>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label>2. Pilih Produk/Servis:</label>
+                    <div style="display:flex; gap:10px; margin-top:5px;">
+                        <select id="bill-item-select" style="flex-grow:1;"></select>
+                        <button onclick="addToBill()" style="background:#3498db;">+ Tambah</button>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-bottom: 20px;">
+                    <button onclick="generateDocument('QUOTATION')" style="background:#f39c12; flex:1;">Cetak Quotation</button>
+                    <button onclick="generateDocument('INVOICE')" style="background:#2980b9; flex:1;">Cetak Invoice</button>
+                    <button onclick="generateDocument('RECEIPT')" style="background:#27ae60; flex:1;">Cetak Receipt</button>
+                </div>
             </div>
-        </div>
 
-        <div style="display:flex; gap:10px; margin-bottom: 20px;">
-            <button onclick="generateDocument('QUOTATION')" style="background:#f39c12; flex:1;">Cetak Quotation</button>
-            <button onclick="generateDocument('INVOICE')" style="background:#2980b9; flex:1;">Cetak Invoice</button>
-            <button onclick="generateDocument('RECEIPT')" style="background:#27ae60; flex:1;">Cetak Receipt</button>
-        </div>
-    </div>
+            <div id="billing-print-area">
+                <div style="display:flex; justify-content:space-between; border-bottom:2px solid #eee; padding-bottom:10px; margin-bottom:20px;">
+                    <div>
+                        <h2 id="bill-type" style="margin:0; color:#2c3e50;">INVOICE</h2>
+                        <p style="font-size:0.8rem; color:#7f8c8d;">Ref: <span id="bill-ref-no">-</span></p>
+                    </div>
+                    <div style="text-align:right;">
+                        <h4 style="margin:0;">NAMA SYARIKAT ANDA</h4>
+                        <p style="font-size:0.8rem;">Alamat Perniagaan Anda, Malaysia</p>
+                    </div>
+                </div>
 
-    <div id="billing-print-area">
-        <div style="display:flex; justify-content:space-between; border-bottom:2px solid #eee; padding-bottom:10px; margin-bottom:20px;">
-            <div>
-                <h2 id="bill-type" style="margin:0; color:#2c3e50;">INVOICE</h2>
-                <p style="font-size:0.8rem; color:#7f8c8d;">No: #ORD-${Date.now().toString().slice(-6)}</p>
+                <div class="bill-info" style="display:flex; justify-content:space-between; margin-bottom:20px;">
+                    <div>
+                        <p><strong>Kepada:</strong></p>
+                        <div id="bill-client-display">Sila pilih pelanggan...</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <p><strong>Tarikh:</strong> <span id="bill-date">-</span></p>
+                    </div>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Deskripsi Item</th>
+                            <th>Harga (RM)</th>
+                            <th class="no-print">Tindakan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bill-items-list"></tbody>
+                    <tfoot>
+                        <tr>
+                            <th style="text-align:right;">JUMLAH KESELURUHAN:</th>
+                            <th colspan="2">RM <span id="bill-total">0.00</span></th>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div style="margin-top:50px; font-size: 0.8rem; border-top: 1px solid #eee; padding-top:10px;">
+                    <p>* Ini adalah dokumen janaan komputer. Tandatangan tidak diperlukan.</p>
+                </div>
             </div>
-            <div style="text-align:right;">
-                <h4 style="margin:0;">NAMA SYARIKAT ANDA</h4>
-                <p style="font-size:0.8rem;">Alamat Perniagaan Anda, Malaysia</p>
+        </section>
+
+        <section id="history">
+            <h1>Sales & Document History</h1>
+            <div style="margin-bottom: 20px;">
+                <button onclick="clearHistory()" style="background:#e74c3c;">Kosongkan Semua Sejarah</button>
             </div>
-        </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tarikh</th>
+                        <th>Jenis</th>
+                        <th>No. Dokumen</th>
+                        <th>Pelanggan</th>
+                        <th>Jumlah (RM)</th>
+                        <th>Tindakan</th>
+                    </tr>
+                </thead>
+                <tbody id="history-list"></tbody>
+            </table>
+        </section>
 
-        <div class="bill-info" style="display:flex; justify-content:space-between;">
-            <div>
-                <p><strong>Kepada:</strong></p>
-                <div id="bill-client-display">Sila pilih pelanggan...</div>
-            </div>
-            <div style="text-align:right;">
-                <p><strong>Tarikh:</strong> <span id="bill-date">-</span></p>
-            </div>
-        </div>
-
-        <table style="margin-top:30px;">
-            <thead>
-                <tr>
-                    <th>Deskripsi Item</th>
-                    <th>Harga (RM)</th>
-                    <th class="no-print">Tindakan</th>
-                </tr>
-            </thead>
-            <tbody id="bill-items-list">
-                </tbody>
-            <tfoot>
-                <tr>
-                    <th style="text-align:right;">JUMLAH KESELURUHAN:</th>
-                    <th colspan="2">RM <span id="bill-total">0.00</span></th>
-                </tr>
-            </tfoot>
-        </table>
-
-        <div style="margin-top:50px; font-size: 0.8rem; border-top: 1px solid #eee; pt-10px;">
-            <p>* Ini adalah dokumen janaan komputer. Tandatangan tidak diperlukan.</p>
-        </div>
-    </div>
-</section>
-        <li><a href="#" onclick="showSection('history')">History</a></li>
-
-<section id="history">
-    <h1>Sales & Document History</h1>
-    <div style="margin-bottom: 20px;">
-        <button onclick="clearHistory()" style="background:#e74c3c;">Kosongkan Semua Sejarah</button>
-    </div>
-    <table>
-        <thead>
-            <tr>
-                <th>Tarikh</th>
-                <th>Jenis</th>
-                <th>No. Dokumen</th>
-                <th>Pelanggan</th>
-                <th>Jumlah (RM)</th>
-                <th>Tindakan</th>
-            </tr>
-        </thead>
-        <tbody id="history-list"></tbody>
-    </table>
-</section>
-
-    <script src="app.js"></script>
+    </div> <script src="app.js"></script>
 </body>
 </html>
