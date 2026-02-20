@@ -25,3 +25,48 @@ th { background: #ecf0f1; }
     section { display: block; }
     #billing-print-area { border: none; }
 }
+/* Penambahbaikan untuk Cetakan */
+@media print {
+    .no-print, .no-print *, nav, form, .billing-controls {
+        display: none !important;
+    }
+    
+    body {
+        background-color: white !important;
+        margin: 0;
+        padding: 0;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    section {
+        display: none; /* Sembunyikan semua section */
+    }
+
+    section#billing {
+        display: block !important; /* Hanya tunjuk section billing */
+        box-shadow: none;
+        border: none;
+    }
+
+    #billing-print-area {
+        border: none !important;
+        width: 100%;
+    }
+}
+
+/* Gaya tambahan untuk table di billing */
+#bill-items-table th {
+    background-color: #34495e;
+    color: white;
+}
+
+tfoot th {
+    background-color: #f9f9f9;
+    font-size: 1.2rem;
+}
