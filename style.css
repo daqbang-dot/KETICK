@@ -70,3 +70,19 @@ tfoot th {
     background-color: #f9f9f9;
     font-size: 1.2rem;
 }
+/* Badge untuk jenis dokumen */
+.badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+.invoice { background-color: #2980b9; }
+.quotation { background-color: #f39c12; }
+.receipt { background-color: #27ae60; }
+
+/* Tambahan gaya table history */
+#history-list td {
+    vertical-align: middle;
+}
