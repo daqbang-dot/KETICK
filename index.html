@@ -139,6 +139,27 @@
         </div>
     </div>
 </section>
+        <li><a href="#" onclick="showSection('history')">History</a></li>
+
+<section id="history">
+    <h1>Sales & Document History</h1>
+    <div style="margin-bottom: 20px;">
+        <button onclick="clearHistory()" style="background:#e74c3c;">Kosongkan Semua Sejarah</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Tarikh</th>
+                <th>Jenis</th>
+                <th>No. Dokumen</th>
+                <th>Pelanggan</th>
+                <th>Jumlah (RM)</th>
+                <th>Tindakan</th>
+            </tr>
+        </thead>
+        <tbody id="history-list"></tbody>
+    </table>
+</section>
 
     <script src="app.js"></script>
 </body>
