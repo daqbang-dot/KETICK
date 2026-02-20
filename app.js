@@ -1,3 +1,117 @@
+// 1. TAMBAH DATA STORAGE BARU (Di bahagian atas app.js)
+let historyData = JSON.parse(localStorage.getItem('history')) || [];
+
+// 2. KEMASKINI FUNGSI printBill / generateDocument
+function generateDocument(type) {
+    const clientIndex = document.getElementById('bill-client-select').value;
+    const client = clientData[clientIndex];
+    
+    if (!client) {
+        alert("Sila pilih pelanggan!");
+        return;
+    }
+
+    if (currentBillItems.length === 0) {
+        alert("Sila tambah item ke dalam senarai!");
+        return;
+    }
+
+    const docNo = `ORD-${Date.now().toString().slice(-6)}`;
+    const totalAmount = document.getElementById('bill-total').innerText;
+
+    // Simpan ke dalam Sejarah (History)
+    const newRecord = {
+        id: Date.now(),
+        date: new Date().toLocaleDateString('ms-MY'),
+        time: new Date().toLocaleTimeString('ms-MY'),
+        type: type,
+        docNo: docNo,
+        clientName: client.name,
+        amount: totalAmount,
+        items: [...currentBillItems] // Salinan item
+    };
+
+    historyData.push(newRecord);
+    localStorage.setItem('history', JSON.stringify(historyData));
+
+    // Paparkan maklumat pada dokumen untuk dicetak
+    setBillType(type);
+    document.getElementById('bill-client-display').innerHTML = `
+        <strong>${client.name}</strong><br>
+        Email: ${client.email}<br>
+        Tel: ${client.phone}
+    `;
+    document.getElementById('bill-date').innerText = newRecord.date;
+    
+    // Proses Cetak
+    setTimeout(() => {
+        window.print();
+        renderAll(); // Segarkan senarai history
+    }, 500);
+}
+
+// 3. TAMBAH FUNGSI UNTUK PAPARAN SEJARAH
+function renderHistory() {
+    const list = document.getElementById('history-list');
+    // Susun sejarah yang terbaru di atas (reverse)
+    const sortedHistory = [...historyData].reverse();
+    
+    list.innerHTML = sortedHistory.map(h => `
+        <tr>
+            <td>${h.date} <br><small>${h.time}</small></td>
+            <td><span class="badge ${h.type.toLowerCase()}">${h.type}</span></td>
+            <td>${h.docNo}</td>
+            <td>${h.clientName}</td>
+            <td><strong>RM ${h.amount}</strong></td>
+            <td>
+                <button onclick="viewHistoryItem(${h.id})" style="background:#3498db; padding:5px;">Lihat</button>
+                <button onclick="deleteHistoryItem(${h.id})" style="background:#e74c3c; padding:5px;">Hapus</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Fungsi Padam Satu Rekod
+function deleteHistoryItem(id) {
+    if(confirm("Padam rekod ini?")) {
+        historyData = historyData.filter(h => h.id !== id);
+        localStorage.setItem('history', JSON.stringify(historyData));
+        renderAll();
+    }
+}
+
+// Fungsi Kosongkan Semua Sejarah
+function clearHistory() {
+    if(confirm("Anda pasti mahu padam SEMUA sejarah jualan?")) {
+        historyData = [];
+        localStorage.setItem('history', JSON.stringify(historyData));
+        renderAll();
+    }
+}
+
+// Fungsi Lihat Semula (Load semula ke Billing area)
+function viewHistoryItem(id) {
+    const record = historyData.find(h => h.id === id);
+    if(record) {
+        currentBillItems = record.items;
+        showSection('billing');
+        setBillType(record.type);
+        renderBillingTable();
+        alert("Rekod dimuatkan ke bahagian Billing. Anda boleh cetak semula.");
+    }
+}
+
+// 4. KEMASKINI renderAll() supaya termasuk renderHistory()
+function renderAll() {
+    // ... kod render CRM, Inventory, Client sedia ada ...
+    
+    // Tambah baris ini:
+    renderHistory();
+    
+    // Kod sedia ada untuk dropdown...
+    document.getElementById('bill-client-select').innerHTML = clientData.map((d, i) => `<option value="${i}">${d.name}</option>`).join('');
+    document.getElementById('bill-item-select').innerHTML = inventoryData.map((d, i) => `<option value="${i}">${d.item} (RM ${d.price})</option>`).join('');
+}
 // Data Storage (Local Storage)
 let crmData = JSON.parse(localStorage.getItem('crm')) || [];
 let inventoryData = JSON.parse(localStorage.getItem('inventory')) || [];
