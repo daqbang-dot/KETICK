@@ -11,6 +11,7 @@
     <nav class="no-print">
         <h2>MyBiz Admin</h2>
         <ul>
+            <li><a href="#" onclick="showSection('dashboard')">Dashboard</a></li>
             <li><a href="#" onclick="showSection('crm')">CRM</a></li>
             <li><a href="#" onclick="showSection('inventory')">Inventory</a></li>
             <li><a href="#" onclick="showSection('clients')">Clients</a></li>
@@ -20,6 +21,24 @@
     </nav>
 
     <div class="container">
+        
+<section id="dashboard" class="active">
+    <h1>Business Dashboard</h1>
+    <div style="display: flex; gap: 20px; margin-top: 20px;">
+        <div style="flex: 1; background: #2980b9; color: white; padding: 20px; border-radius: 8px;">
+            <h3>Total Jualan (RM)</h3>
+            <h2 id="dash-total-sales">0.00</h2>
+        </div>
+        <div style="flex: 1; background: #27ae60; color: white; padding: 20px; border-radius: 8px;">
+            <h3>Resit Dikeluarkan</h3>
+            <h2 id="dash-total-rec">0</h2>
+        </div>
+        <div style="flex: 1; background: #f39c12; color: white; padding: 20px; border-radius: 8px;">
+            <h3>Quotation Aktif</h3>
+            <h2 id="dash-total-quo">0</h2>
+        </div>
+    </div>
+</section>
         
         <section id="crm" class="active">
             <h1>Customer Relationship Management (CRM)</h1>
