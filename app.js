@@ -242,17 +242,49 @@ function removeFromBill(index) {
 
 function generateDocument(type) {
     const clientIndex = document.getElementById('bill-client-select').value;
-    const client = clientData[clientIndex];
     
-    if (!client) {
-        alert("Sila pilih atau daftar pelanggan di tab 'Clients' terlebih dahulu.");
+    if (clientIndex === "") {
+        alert("Sila pilih pelanggan terlebih dahulu!");
         return;
     }
 
+    const client = clientData[clientIndex];
+    const totalAmount = document.getElementById('bill-total').innerText;
+
     if (currentBillItems.length === 0) {
-        alert("Sila tambah sekurang-kurangnya satu item ke dalam senarai.");
+        alert("Sila tambah item ke dalam senarai!");
         return;
     }
+
+    // Set Maklumat Dokumen
+    setBillType(type);
+    document.getElementById('bill-client-display').innerHTML = `
+        <strong>${client.name}</strong><br>
+        Email: ${client.email}<br>
+        Tel: ${client.phone}
+    `;
+    document.getElementById('bill-date').innerText = new Date().toLocaleDateString('ms-MY');
+
+    // Simpan ke History
+    const docNo = `ORD-${Date.now().toString().slice(-6)}`;
+    historyData.push({
+        id: Date.now(),
+        date: new Date().toLocaleDateString('ms-MY'),
+        time: new Date().toLocaleTimeString('ms-MY'),
+        type: type,
+        docNo: docNo,
+        clientName: client.name,
+        amount: totalAmount,
+        items: [...currentBillItems]
+    });
+    localStorage.setItem('history', JSON.stringify(historyData));
+
+    // Print
+    setTimeout(() => {
+        window.print();
+        renderAll(); 
+    }, 300);
+}
 
     setBillType(type);
     document.getElementById('bill-client-display').innerHTML = `
@@ -304,3 +336,19 @@ function saveAndRender() {
 
 // Initial Run
 renderAll();
+// Tambah ini di bahagian bawah app.js anda
+document.getElementById('bill-client-select').addEventListener('change', function() {
+    const clientIndex = this.value;
+    const displayArea = document.getElementById('bill-client-display');
+    
+    if (clientIndex !== "") {
+        const client = clientData[clientIndex];
+        displayArea.innerHTML = `
+            <strong>${client.name}</strong><br>
+            Email: ${client.email}<br>
+            Tel: ${client.phone}
+        `;
+    } else {
+        displayArea.innerText = "Sila pilih pelanggan...";
+    }
+});
