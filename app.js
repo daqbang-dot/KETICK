@@ -18,7 +18,7 @@ function showSection(id) {
 }
 
 // ==========================================
-// 3. CORE LOGIC (CRM, INVENTORY, CLIENTS)
+// 3. CORE LOGIC (CRM & CLIENTS)
 // ==========================================
 
 // CRM Logic
@@ -28,19 +28,6 @@ document.getElementById('crm-form').addEventListener('submit', (e) => {
         id: Date.now(), 
         name: document.getElementById('lead-name').value, 
         status: document.getElementById('lead-status').value 
-    });
-    saveAndRender();
-    e.target.reset();
-});
-
-// Inventory Logic
-document.getElementById('inv-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    inventoryData.push({ 
-        id: Date.now(), 
-        item: document.getElementById('item-name').value, 
-        qty: document.getElementById('item-qty').value, 
-        price: document.getElementById('item-price').value 
     });
     saveAndRender();
     e.target.reset();
@@ -60,25 +47,24 @@ document.getElementById('client-form').addEventListener('submit', (e) => {
 });
 
 // ==========================================
-// 4. BILLING & DOCUMENT LOGIC
+// 4. INVENTORY LOGIC (DENGAN DESCRIPTION)
 // ==========================================
-
-// Update paparan pelanggan bila dropdown berubah
-document.getElementById('bill-client-select').addEventListener('change', function() {
-    const clientIndex = this.value;
-    const displayArea = document.getElementById('bill-client-display');
-    
-    if (clientIndex !== "") {
-        const client = clientData[clientIndex];
-        displayArea.innerHTML = `
-            <strong>${client.name}</strong><br>
-            Email: ${client.email}<br>
-            Tel: ${client.phone}
-        `;
-    } else {
-        displayArea.innerText = "Sila pilih pelanggan...";
-    }
+document.getElementById('inv-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    inventoryData.push({ 
+        id: Date.now(), 
+        item: document.getElementById('item-name').value, 
+        desc: document.getElementById('item-desc').value, // Simpan description
+        qty: document.getElementById('item-qty').value, 
+        price: document.getElementById('item-price').value 
+    });
+    saveAndRender();
+    e.target.reset();
 });
+
+// ==========================================
+// 5. BILLING & DOCUMENT LOGIC
+// ==========================================
 
 function setBillType(type) {
     currentBillType = type;
@@ -95,6 +81,7 @@ function addToBill() {
     if (selectedItem) {
         currentBillItems.push({
             item: selectedItem.item,
+            desc: selectedItem.desc || "", // Masukkan desc ke dalam bill
             price: parseFloat(selectedItem.price)
         });
         renderBillingTable();
@@ -109,9 +96,14 @@ function renderBillingTable() {
     list.innerHTML = currentBillItems.map((i, index) => {
         total += i.price;
         return `<tr>
-            <td>${i.item}</td>
+            <td>
+                <strong>${i.item}</strong><br>
+                <small style="color:#666;">${i.desc}</small> 
+            </td>
             <td>RM ${i.price.toFixed(2)}</td>
-            <td class="no-print"><button onclick="removeFromBill(${index})" style="background:#e74c3c; padding:2px 5px;">X</button></td>
+            <td class="no-print">
+                <button onclick="removeFromBill(${index})" style="background:#e74c3c; padding:2px 5px; color:white; border:none; cursor:pointer; border-radius:3px;">X</button>
+            </td>
         </tr>`;
     }).join('');
     document.getElementById('bill-total').innerText = total.toFixed(2);
@@ -132,23 +124,19 @@ function generateDocument(type) {
     const client = clientData[clientIndex];
     const totalAmount = document.getElementById('bill-total').innerText;
 
-    // --- LOGIK NOMBOR RUJUKAN BERMULA 1001 ---
+    // Logik Nombor Rujukan
     const count = historyData.filter(h => h.type === type).length;
     const nextNo = 1001 + count;
-    
-    let prefix = "INV";
-    if(type === 'QUOTATION') prefix = "QUO";
-    if(type === 'RECEIPT') prefix = "REC";
-    
+    let prefix = type === 'QUOTATION' ? "QUO" : (type === 'RECEIPT' ? "REC" : "INV");
     const docNo = `${prefix}${nextNo}`;
 
-    // 1. Update UI Dokumen
+    // Update UI
     setBillType(type);
     document.getElementById('bill-ref-no').innerText = docNo;
-    document.getElementById('bill-client-display').innerHTML = `<strong>${client.name}</strong><br>Email: ${client.email}<br>Tel: ${client.phone}`;
     document.getElementById('bill-date').innerText = new Date().toLocaleDateString('ms-MY');
+    document.getElementById('bill-client-display').innerHTML = `<strong>${client.name}</strong><br>${client.email}<br>${client.phone}`;
 
-    // 2. Simpan ke History
+    // Simpan ke History
     historyData.push({
         id: Date.now(),
         date: new Date().toLocaleDateString('ms-MY'),
@@ -161,7 +149,6 @@ function generateDocument(type) {
     });
     localStorage.setItem('history', JSON.stringify(historyData));
 
-    // 3. Proses Cetak
     setTimeout(() => {
         window.print();
         if(type === 'RECEIPT') {
@@ -173,21 +160,15 @@ function generateDocument(type) {
 }
 
 // ==========================================
-// 5. DASHBOARD & HISTORY MANAGEMENT
+// 6. DASHBOARD & HISTORY
 // ==========================================
 function updateDashboard() {
-    let totalSales = 0;
-    let recCount = 0;
-    let quoCount = 0;
-
+    let totalSales = 0, recCount = 0, quoCount = 0;
     historyData.forEach(h => {
-        if(h.type === 'RECEIPT' || h.type === 'INVOICE') {
-            totalSales += parseFloat(h.amount);
-        }
+        if(h.type === 'RECEIPT' || h.type === 'INVOICE') totalSales += parseFloat(h.amount);
         if(h.type === 'RECEIPT') recCount++;
         if(h.type === 'QUOTATION') quoCount++;
     });
-
     if(document.getElementById('dash-total-sales')) {
         document.getElementById('dash-total-sales').innerText = totalSales.toFixed(2);
         document.getElementById('dash-total-rec').innerText = recCount;
@@ -198,77 +179,58 @@ function updateDashboard() {
 function renderHistory() {
     const list = document.getElementById('history-list');
     if(!list) return;
-    const sortedHistory = [...historyData].reverse();
-    list.innerHTML = sortedHistory.map(h => `
+    list.innerHTML = [...historyData].reverse().map(h => `
         <tr>
-            <td>${h.date} <br><small>${h.time}</small></td>
+            <td>${h.date}</td>
             <td><span class="badge ${h.type.toLowerCase()}">${h.type}</span></td>
             <td>${h.docNo}</td>
             <td>${h.clientName}</td>
-            <td><strong>RM ${h.amount}</strong></td>
+            <td>RM ${h.amount}</td>
             <td>
-                <button onclick="viewHistoryItem(${h.id})" style="background:#3498db; padding:5px;">Lihat</button>
-                <button onclick="deleteHistoryItem(${h.id})" style="background:#e74c3c; padding:5px;">Hapus</button>
+                <button onclick="viewHistoryItem(${h.id})" style="background:#3498db; padding:5px; color:white; border:none; border-radius:3px; cursor:pointer;">Lihat</button>
+                <button onclick="deleteHistoryItem(${h.id})" style="background:#e74c3c; padding:5px; color:white; border:none; border-radius:3px; cursor:pointer;">Hapus</button>
             </td>
         </tr>
     `).join('');
 }
 
-function deleteHistoryItem(id) {
-    if(confirm("Padam rekod ini?")) {
-        historyData = historyData.filter(h => h.id !== id);
-        localStorage.setItem('history', JSON.stringify(historyData));
-        renderAll();
-    }
-}
-
-function clearHistory() {
-    if(confirm("Padam SEMUA sejarah?")) {
-        historyData = [];
-        localStorage.setItem('history', JSON.stringify(historyData));
-        renderAll();
-    }
-}
-
-function viewHistoryItem(id) {
-    const record = historyData.find(h => h.id === id);
-    if(record) {
-        currentBillItems = record.items;
-        showSection('billing');
-        setBillType(record.type);
-        renderBillingTable();
-        alert(`Rekod ${record.docNo} dimuatkan. Anda boleh cetak semula.`);
-    }
-}
-
 // ==========================================
-// 6. RENDER & SAVE DATA (SISTEM PUSAT)
+// 7. RENDER ALL & SAVE
 // ==========================================
 function renderAll() {
-    // 1. Render Tables
-    const crmList = document.getElementById('crm-list');
-    if(crmList) crmList.innerHTML = crmData.map(d => `<tr><td>${d.name}</td><td>${d.status}</td><td><button onclick="deleteItem('crm', ${d.id})">Padam</button></td></tr>`).join('');
+    // Render CRM
+    document.getElementById('crm-list').innerHTML = crmData.map(d => `<tr><td>${d.name}</td><td>${d.status}</td><td><button onclick="deleteItem('crm', ${d.id})">Padam</button></td></tr>`).join('');
     
+    // Render Inventory (Dengan Description)
     const invList = document.getElementById('inv-list');
-    if(invList) invList.innerHTML = inventoryData.map(d => `<tr><td>${d.item}</td><td>${d.qty}</td><td>RM ${parseFloat(d.price).toFixed(2)}</td><td><button onclick="deleteItem('inventory', ${d.id})">Padam</button></td></tr>`).join('');
-    
-    const clientList = document.getElementById('client-list');
-    if(clientList) clientList.innerHTML = clientData.map(d => `<tr><td>${d.name}</td><td>${d.email}</td><td>${d.phone}</td><td><button onclick="deleteItem('clients', ${d.id})">Padam</button></td></tr>`).join('');
+    if(invList) {
+        invList.innerHTML = inventoryData.map(d => `
+            <tr>
+                <td>${d.item}</td>
+                <td><small>${d.desc || '-'}</small></td>
+                <td>${d.qty}</td>
+                <td>RM ${parseFloat(d.price).toFixed(2)}</td>
+                <td><button onclick="deleteItem('inventory', ${d.id})">Padam</button></td>
+            </tr>`).join('');
+    }
 
-    // 2. Update Dropdowns
+    // Render Clients
+    document.getElementById('client-list').innerHTML = clientData.map(d => `<tr><td>${d.name}</td><td>${d.email}</td><td>${d.phone}</td><td><button onclick="deleteItem('clients', ${d.id})">Padam</button></td></tr>`).join('');
+
+    // Update Dropdowns
     const clientSelect = document.getElementById('bill-client-select');
     if(clientSelect) {
-        const currentClientVal = clientSelect.value;
+        const currentVal = clientSelect.value;
         clientSelect.innerHTML = '<option value="">-- Pilih Pelanggan --</option>' + clientData.map((d, i) => `<option value="${i}">${d.name}</option>`).join('');
-        clientSelect.value = currentClientVal;
+        clientSelect.value = currentVal;
     }
 
     const itemSelect = document.getElementById('bill-item-select');
     if(itemSelect) {
-        itemSelect.innerHTML = '<option value="">-- Pilih Item --</option>' + inventoryData.map((d, i) => `<option value="${i}">${d.item} (RM ${parseFloat(d.price).toFixed(2)})</option>`).join('');
+        itemSelect.innerHTML = '<option value="">-- Pilih Item --</option>' + 
+            inventoryData.map((d, i) => `<option value="${i}">${d.item} ${d.desc ? '('+d.desc+')' : ''}</option>`).join('');
     }
 
-    // 3. Update Dashboard & History
     updateDashboard();
     renderHistory();
 }
@@ -280,6 +242,14 @@ function deleteItem(type, id) {
     saveAndRender();
 }
 
+function deleteHistoryItem(id) {
+    if(confirm("Padam rekod ini?")) {
+        historyData = historyData.filter(h => h.id !== id);
+        localStorage.setItem('history', JSON.stringify(historyData));
+        renderAll();
+    }
+}
+
 function saveAndRender() {
     localStorage.setItem('crm', JSON.stringify(crmData));
     localStorage.setItem('inventory', JSON.stringify(inventoryData));
@@ -287,5 +257,5 @@ function saveAndRender() {
     renderAll();
 }
 
-// Initial Run
+// Mula Sistem
 renderAll();
