@@ -1,230 +1,199 @@
 // ==========================================
-// 1. DATA STORAGE & INITIALIZATION
+// 1. DATA INITIALIZATION
 // ==========================================
-let companyProfile = JSON.parse(localStorage.getItem('companyProfile')) || {
-    name: '', reg: '', address: '', phone: '', logo: '', stamp: ''
-};
-// Tambah storage untuk Autosave Bank & Remark
-let bankSettings = JSON.parse(localStorage.getItem('bankSettings')) || {
-    bankName: '', accNo: '', holder: '', remark: ''
-};
-
+let companyProfile = JSON.parse(localStorage.getItem('companyProfile')) || { name:'', reg:'', address:'', phone:'', logo:'', stamp:'' };
 let crmData = JSON.parse(localStorage.getItem('crm')) || [];
 let inventoryData = JSON.parse(localStorage.getItem('inventory')) || [];
 let clientData = JSON.parse(localStorage.getItem('clients')) || [];
 let historyData = JSON.parse(localStorage.getItem('history')) || [];
 let currentBillItems = [];
-let currentBillType = "INVOICE";
 
 // ==========================================
-// 2. FUNGSI PROFIL & AUTOSAVE BANK
+// 2. PROFIL & SYNC (IMPORT/EXPORT)
 // ==========================================
+function handleFileUpload(event, type) {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        if (type === 'logo') companyProfile.logo = e.target.result;
+        if (type === 'stamp') companyProfile.stamp = e.target.result;
+    };
+    if (file) reader.readAsDataURL(file);
+}
+
 function saveCompanyProfile() {
-    companyProfile = {
-        name: document.getElementById('conf-name').value,
-        reg: document.getElementById('conf-reg').value,
-        address: document.getElementById('conf-address').value,
-        phone: document.getElementById('conf-phone').value,
-        logo: document.getElementById('conf-logo').value,
-        stamp: document.getElementById('conf-stamp').value
-    };
+    companyProfile.name = document.getElementById('conf-name').value;
+    companyProfile.reg = document.getElementById('conf-reg').value;
+    companyProfile.address = document.getElementById('conf-address').value;
+    companyProfile.phone = document.getElementById('conf-phone').value;
     localStorage.setItem('companyProfile', JSON.stringify(companyProfile));
-    alert("Profil berjaya disimpan!");
+    alert("Profil Disimpan!");
     renderAll();
 }
 
-// Fungsi Autosave: Dipanggil setiap kali user menaip di ruangan bank/remark
-function autoSaveBank() {
-    const settings = {
-        bankName: document.getElementById('bill-bank-name').value,
-        accNo: document.getElementById('bill-bank-acc').value,
-        holder: document.getElementById('bill-bank-holder').value,
-        remark: document.getElementById('bill-remark').value
+function exportData() {
+    const data = { companyProfile, crmData, inventoryData, clientData, historyData };
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `MyBiz_Backup.json`;
+    a.click();
+}
+
+function importData(event) {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const data = JSON.parse(e.target.result);
+        Object.keys(data).forEach(key => localStorage.setItem(key === 'crmData'?'crm':key === 'inventoryData'?'inventory':key === 'clientData'?'clients':key, JSON.stringify(data[key])));
+        location.reload();
     };
-    localStorage.setItem('bankSettings', JSON.stringify(settings));
+    reader.readAsText(file);
 }
 
 // ==========================================
-// 3. NAVIGATION & UI CONTROL
+// 3. WHATSAPP AUTOPILOT
 // ==========================================
-function showSection(id) {
-    document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    renderAll();
+async function startWhatsAppAutopilot() {
+    const rawMsg = document.getElementById('wa-message').value;
+    const delay = parseInt(document.getElementById('wa-delay').value) * 1000;
+    const status = document.getElementById('wa-status');
+
+    for (let i = 0; i < clientData.length; i++) {
+        const c = clientData[i];
+        if (!c.phone) continue;
+        status.innerText = `Blast ke ${c.name}...`;
+        let msg = rawMsg.replace(/{nama}/g, c.name);
+        let phone = c.phone.replace(/\D/g, '');
+        if(!phone.startsWith('6')) phone = '6' + phone;
+        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+        if (i < clientData.length - 1) await new Promise(r => setTimeout(r, delay));
+    }
+    status.innerText = "🚀 Selesai!";
 }
 
 // ==========================================
-// 4. CORE LOGIC (CRM, CLIENTS, INVENTORY)
+// 4. INVENTORY & EDIT FUNCTION
 // ==========================================
-document.getElementById('crm-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    crmData.push({ id: Date.now(), name: document.getElementById('lead-name').value, status: document.getElementById('lead-status').value });
-    saveAndRender(); e.target.reset();
-});
-
-document.getElementById('client-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    clientData.push({ id: Date.now(), name: document.getElementById('client-name').value, email: document.getElementById('client-email').value, phone: document.getElementById('client-phone').value });
-    saveAndRender(); e.target.reset();
-});
-
 document.getElementById('inv-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    inventoryData.push({ 
-        id: Date.now(), 
-        item: document.getElementById('item-name').value, 
-        desc: document.getElementById('item-desc').value, 
-        qty: document.getElementById('item-qty').value, 
-        price: document.getElementById('item-price').value 
-    });
-    saveAndRender(); e.target.reset();
+    const editId = document.getElementById('edit-id').value;
+    const item = {
+        id: editId == "-1" ? Date.now() : parseInt(editId),
+        item: document.getElementById('item-name').value,
+        desc: document.getElementById('item-desc').value,
+        qty: parseInt(document.getElementById('item-qty').value),
+        price: parseFloat(document.getElementById('item-price').value)
+    };
+
+    if (editId == "-1") inventoryData.push(item);
+    else {
+        const idx = inventoryData.findIndex(i => i.id == editId);
+        inventoryData[idx] = item;
+    }
+    document.getElementById('edit-id').value = "-1";
+    document.getElementById('inv-btn').innerText = "Tambah Stok";
+    e.target.reset();
+    saveAndRender();
 });
 
-// ==========================================
-// 5. BILLING LOGIC
-// ==========================================
-function setBillType(type) {
-    currentBillType = type;
-    document.getElementById('bill-type').innerText = type;
+function editProduct(id) {
+    const p = inventoryData.find(i => i.id == id);
+    document.getElementById('item-name').value = p.item;
+    document.getElementById('item-desc').value = p.desc;
+    document.getElementById('item-qty').value = p.qty;
+    document.getElementById('item-price').value = p.price;
+    document.getElementById('edit-id').value = id;
+    document.getElementById('inv-btn').innerText = "Simpan Perubahan";
 }
 
+// ==========================================
+// 5. BILLING & AUTOMATIC STOCK DEDUCTION
+// ==========================================
 function addToBill() {
-    const itemIndex = document.getElementById('bill-item-select').value;
-    const selectedItem = inventoryData[itemIndex];
-    if (selectedItem) {
-        currentBillItems.push({ item: selectedItem.item, desc: selectedItem.desc || "", price: parseFloat(selectedItem.price) });
+    const idx = document.getElementById('bill-item-select').value;
+    const item = inventoryData[idx];
+    if (item) {
+        currentBillItems.push({ ...item, originalIdx: idx });
         renderBillingTable();
-    } else { alert("Sila pilih item!"); }
+    }
 }
 
 function renderBillingTable() {
     const list = document.getElementById('bill-items-list');
     let total = 0;
-    list.innerHTML = currentBillItems.map((i, index) => {
+    list.innerHTML = currentBillItems.map((i, idx) => {
         total += i.price;
-        return `<tr><td><strong>${i.item}</strong><br><small>${i.desc}</small></td><td>RM ${i.price.toFixed(2)}</td><td class="no-print"><button onclick="removeFromBill(${index})">X</button></td></tr>`;
+        return `<tr><td>${i.item}</td><td>RM ${i.price.toFixed(2)}</td><td class="no-print"><button onclick="removeFromBill(${idx})">X</button></td></tr>`;
     }).join('');
     document.getElementById('bill-total').innerText = total.toFixed(2);
 }
 
-function removeFromBill(index) {
-    currentBillItems.splice(index, 1);
-    renderBillingTable();
-}
-
-// FIX: Gabungkan logik generateDocument yang pecah tadi
 function generateDocument(type) {
-    const clientIndex = document.getElementById('bill-client-select').value;
-    if (clientIndex === "" || currentBillItems.length === 0) {
-        alert("Sila pilih pelanggan dan tambah item!"); return;
+    const clientIdx = document.getElementById('bill-client-select').value;
+    if (!clientIdx || currentBillItems.length === 0) return alert("Pilih client & item!");
+
+    // AUTOMATION: Potong Stok jika Invois/Resit
+    if (type !== 'QUOTATION') {
+        for (let bItem of currentBillItems) {
+            const invItem = inventoryData.find(i => i.item === bItem.item);
+            if (invItem) {
+                if (invItem.qty <= 0) return alert(`Stok ${invItem.item} sudah habis!`);
+                invItem.qty -= 1; // Kurangkan 1 unit per item
+            }
+        }
     }
 
-    const client = clientData[clientIndex];
-    const totalAmount = document.getElementById('bill-total').innerText;
-
-    // 1. Set Profil Syarikat ke Print Area
-    document.getElementById('print-comp-name').innerText = companyProfile.name || "Nama Syarikat";
-    document.getElementById('print-comp-reg').innerText = "Reg: " + (companyProfile.reg || "-");
-    document.getElementById('print-comp-addr').innerText = companyProfile.address || "";
-    document.getElementById('print-comp-phone').innerText = "Tel: " + (companyProfile.phone || "");
+    // Set Header Data
+    document.getElementById('bill-type').innerText = type;
+    document.getElementById('print-comp-name').innerText = companyProfile.name;
+    if(companyProfile.logo) { document.getElementById('print-logo').src = companyProfile.logo; document.getElementById('print-logo').style.display='block'; }
+    if(companyProfile.stamp) { document.getElementById('print-stamp').src = companyProfile.stamp; document.getElementById('print-stamp').style.display='block'; }
     
-    if(companyProfile.logo) {
-        document.getElementById('print-logo').src = companyProfile.logo;
-        document.getElementById('print-logo').style.display = 'block';
-    }
-    if(companyProfile.stamp) {
-        document.getElementById('print-stamp').src = companyProfile.stamp;
-        document.getElementById('print-stamp').style.display = 'block';
-    }
-
-    // 2. Set Bank & Remark
-    document.getElementById('display-bank').innerText = document.getElementById('bill-bank-name').value || "-";
-    document.getElementById('display-acc').innerText = document.getElementById('bill-bank-acc').value || "-";
-    document.getElementById('display-holder').innerText = document.getElementById('bill-bank-holder').value || "-";
-    document.getElementById('display-remark').innerText = document.getElementById('bill-remark').value || "-";
-
-    // 3. Nombor Rujukan
-    const count = historyData.filter(h => h.type === type).length;
-    const nextNo = 1001 + count;
-    let prefix = type === 'QUOTATION' ? "QUO" : (type === 'RECEIPT' ? "REC" : "INV");
-    const docNo = `${prefix}${nextNo}`;
-
-    document.getElementById('bill-ref-no').innerText = docNo;
-    document.getElementById('bill-date').innerText = new Date().toLocaleDateString('ms-MY');
-    document.getElementById('bill-client-display').innerHTML = `<strong>${client.name}</strong><br>${client.email || ''}<br>${client.phone || ''}`;
-
-    // 4. Simpan Sejarah
-    historyData.push({ id: Date.now(), date: new Date().toLocaleDateString('ms-MY'), type: type, docNo: docNo, clientName: client.name, amount: totalAmount });
-    localStorage.setItem('history', JSON.stringify(historyData));
-
-    setTimeout(() => {
-        window.print();
-        renderAll();
-    }, 300);
+    // Simpan Sejarah
+    const docNo = `${type.slice(0,3)}${Date.now().toString().slice(-4)}`;
+    historyData.push({ id:Date.now(), date:new Date().toLocaleDateString(), type, docNo, clientName: clientData[clientIdx].name, amount: document.getElementById('bill-total').innerText });
+    
+    saveAndRender();
+    setTimeout(() => { window.print(); }, 500);
 }
 
 // ==========================================
-// 6. DASHBOARD & RENDER
+// 6. RENDER LOGIC
 // ==========================================
 function renderAll() {
-    // Render List (CRM, Inv, Clients) - Kod ringkas
-    document.getElementById('crm-list').innerHTML = crmData.map(d => `<tr><td>${d.name}</td><td>${d.status}</td><td><button onclick="deleteItem('crm', ${d.id})">Padam</button></td></tr>`).join('');
-    document.getElementById('inv-list').innerHTML = inventoryData.map(d => `<tr><td>${d.item}</td><td><small>${d.desc || '-'}</small></td><td>${d.qty}</td><td>RM ${parseFloat(d.price).toFixed(2)}</td><td><button onclick="deleteItem('inventory', ${d.id})">Padam</button></td></tr>`).join('');
-    document.getElementById('client-list').innerHTML = clientData.map(d => `<tr><td>${d.name}</td><td>${d.email}</td><td>${d.phone}</td><td><button onclick="deleteItem('clients', ${d.id})">Padam</button></td></tr>`).join('');
-
-    // Update Dropdowns
-    document.getElementById('bill-client-select').innerHTML = '<option value="">-- Pilih --</option>' + clientData.map((d, i) => `<option value="${i}">${d.name}</option>`).join('');
-    document.getElementById('bill-item-select').innerHTML = '<option value="">-- Pilih --</option>' + inventoryData.map((d, i) => `<option value="${i}">${d.item} (${d.desc})</option>`).join('');
-
+    document.getElementById('inv-list').innerHTML = inventoryData.map(d => `<tr><td>${d.item} (Stok: ${d.qty})</td><td>${d.qty}</td><td>RM ${d.price.toFixed(2)}</td><td><button onclick="editProduct(${d.id})">Edit</button></td></tr>`).join('');
+    document.getElementById('crm-list').innerHTML = crmData.map(d => `<tr><td>${d.name}</td><td>${d.status}</td><td><button onclick="deleteItem('crm', ${d.id})">X</button></td></tr>`).join('');
+    document.getElementById('client-list').innerHTML = clientData.map(d => `<tr><td>${d.name}</td><td>${d.phone}</td><td><button onclick="deleteItem('clients', ${d.id})">X</button></td></tr>`).join('');
+    
+    document.getElementById('bill-client-select').innerHTML = '<option value="">-- Pilih --</option>' + clientData.map((c,i) => `<option value="${i}">${c.name}</option>`).join('');
+    document.getElementById('bill-item-select').innerHTML = '<option value="">-- Pilih --</option>' + inventoryData.map((n,i) => `<option value="${i}">${n.item} (Tinggal ${n.qty})</option>`).join('');
+    
     updateDashboard();
     renderHistory();
 }
 
-function updateDashboard() {
-    let totalSales = 0;
-    historyData.forEach(h => { if(h.type !== 'QUOTATION') totalSales += parseFloat(h.amount); });
-    document.getElementById('dash-total-sales').innerText = totalSales.toFixed(2);
-}
-
-function renderHistory() {
-    document.getElementById('history-list').innerHTML = [...historyData].reverse().map(h => `<tr><td>${h.date}</td><td>${h.type}</td><td>${h.docNo}</td><td>${h.clientName}</td><td>RM ${h.amount}</td><td><button onclick="deleteHistoryItem(${h.id})">Hapus</button></td></tr>`).join('');
-}
-
-function deleteItem(type, id) {
-    if (type === 'crm') crmData = crmData.filter(i => i.id !== id);
-    else if (type === 'inventory') inventoryData = inventoryData.filter(i => i.id !== id);
-    else if (type === 'clients') clientData = clientData.filter(i => i.id !== id);
-    saveAndRender();
-}
-
 function saveAndRender() {
-    localStorage.setItem('crm', JSON.stringify(crmData));
     localStorage.setItem('inventory', JSON.stringify(inventoryData));
+    localStorage.setItem('history', JSON.stringify(historyData));
     localStorage.setItem('clients', JSON.stringify(clientData));
+    localStorage.setItem('crm', JSON.stringify(crmData));
     renderAll();
 }
 
-// LOAD DATA AWAL
-function loadAllSettings() {
-    // Load Company Profile
-    document.getElementById('conf-name').value = companyProfile.name || "";
-    document.getElementById('conf-reg').value = companyProfile.reg || "";
-    document.getElementById('conf-address').value = companyProfile.address || "";
-    document.getElementById('conf-phone').value = companyProfile.phone || "";
-    document.getElementById('conf-logo').value = companyProfile.logo || "";
-    document.getElementById('conf-stamp').value = companyProfile.stamp || "";
-
-    // Load Bank Autosave
-    document.getElementById('bill-bank-name').value = bankSettings.bankName || "";
-    document.getElementById('bill-bank-acc').value = bankSettings.accNo || "";
-    document.getElementById('bill-bank-holder').value = bankSettings.holder || "";
-    document.getElementById('bill-remark').value = bankSettings.remark || "";
+function updateDashboard() {
+    let total = 0;
+    historyData.forEach(h => { if(h.type !== 'QUOTATION') total += parseFloat(h.amount); });
+    document.getElementById('dash-total-sales').innerText = total.toFixed(2);
 }
 
-// Tambah Event Listener untuk Autosave Bank/Remark
-['bill-bank-name', 'bill-bank-acc', 'bill-bank-holder', 'bill-remark'].forEach(id => {
-    document.getElementById(id).addEventListener('input', autoSaveBank);
-});
+function renderHistory() {
+    document.getElementById('history-list').innerHTML = historyData.map(h => `<tr><td>${h.date}</td><td>${h.docNo}</td><td>${h.clientName}</td><td>RM ${h.amount}</td><td><button onclick="deleteHistoryItem(${h.id})">X</button></td></tr>`).join('');
+}
+
+function showSection(id) {
+    document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
 
 renderAll();
-loadAllSettings();
