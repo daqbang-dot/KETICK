@@ -1,6 +1,10 @@
 {
   "name": "ketick-os",
   "version": "1.0.0",
+  "homepage": "https://daqbang-dot.github.io/KETICK/",
+  ...
+}
+
   "private": true,
   "dependencies": {
     "react": "^18.2.0",
